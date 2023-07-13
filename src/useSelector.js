@@ -12,17 +12,25 @@ function compareDeep(value, currentValue) {
   // for arrays, compare items deeply
 
   if (Array.isArray(value)) {
-    return (
-      Array.isArray(currentValue) &&
-      value.length === currentValue.length &&
-      value.every((item, i) => compareDeep(item, currentValue[i]))
-    );
+    if (!Array.isArray(currentValue)) {
+      return false;
+    }
+
+    if (value.length !== currentValue.length) {
+      return false;
+    }
+
+    return value.every((item, i) => compareDeep(item, currentValue[i]));
   }
 
   // for objects, compare properties deeply
 
   if (typeof value === "object") {
     if (currentValue === null) {
+      return false;
+    }
+
+    if (Array.isArray(currentValue)) {
       return false;
     }
 
@@ -33,12 +41,12 @@ function compareDeep(value, currentValue) {
     const keys = Object.keys(value);
     const currentKeys = Object.keys(currentValue);
 
-    return (
-      keys.length === currentKeys.length &&
-      keys.every(
-        (key) =>
-          key in currentValue && compareDeep(value[key], currentValue[key])
-      )
+    if (keys.length !== currentKeys.length) {
+      return false;
+    }
+
+    return keys.every(
+      (key) => key in currentValue && compareDeep(value[key], currentValue[key])
     );
   }
 
