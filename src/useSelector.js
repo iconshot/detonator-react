@@ -38,8 +38,8 @@ function compareDeep(value, currentValue) {
       return false;
     }
 
-    const keys = Object.keys(value);
-    const currentKeys = Object.keys(currentValue);
+    const keys = Object.getOwnPropertyNames(value);
+    const currentKeys = Object.getOwnPropertyNames(currentValue);
 
     if (keys.length !== currentKeys.length) {
       return false;
