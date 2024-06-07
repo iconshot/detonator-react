@@ -9,10 +9,11 @@ const ProviderChild = ({
   loading,
   error,
   LoadingComponent,
+  ErrorComponent,
   children
 }) => {
   if (error) {
-    return null;
+    return ErrorComponent;
   }
   if (loading) {
     return LoadingComponent;
@@ -23,6 +24,7 @@ var Provider = (({
   store,
   persistor = null,
   LoadingComponent = null,
+  ErrorComponent = null,
   children
 }) => {
   // has persistor = loading
@@ -36,14 +38,12 @@ var Provider = (({
 
     // init persistor, if any
 
-    setTimeout(() => {
-      persistor.init().catch(error => {
-        setError(true);
-        throw error;
-      }).finally(() => {
-        setLoading(false);
-      });
-    }, 5000);
+    persistor.init().catch(error => {
+      setError(true);
+      throw error;
+    }).finally(() => {
+      setLoading(false);
+    });
   }, []);
   return /*#__PURE__*/React.createElement(Context.Provider, {
     value: {
@@ -53,7 +53,8 @@ var Provider = (({
   }, /*#__PURE__*/React.createElement(ProviderChild, {
     loading: loading,
     error: error,
-    LoadingComponent: LoadingComponent
+    LoadingComponent: LoadingComponent,
+    ErrorComponent: ErrorComponent
   }, children));
 });
 

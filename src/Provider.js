@@ -2,9 +2,15 @@ import React from "react";
 
 import Context from "./Context";
 
-const ProviderChild = ({ loading, error, LoadingComponent, children }) => {
+const ProviderChild = ({
+  loading,
+  error,
+  LoadingComponent,
+  ErrorComponent,
+  children,
+}) => {
   if (error) {
-    return null;
+    return ErrorComponent;
   }
 
   if (loading) {
@@ -18,6 +24,7 @@ export default ({
   store,
   persistor = null,
   LoadingComponent = null,
+  ErrorComponent = null,
   children,
 }) => {
   // has persistor = loading
@@ -33,18 +40,16 @@ export default ({
 
     // init persistor, if any
 
-    setTimeout(() => {
-      persistor
-        .init()
-        .catch((error) => {
-          setError(true);
+    persistor
+      .init()
+      .catch((error) => {
+        setError(true);
 
-          throw error;
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }, 5000);
+        throw error;
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -53,6 +58,7 @@ export default ({
         loading={loading}
         error={error}
         LoadingComponent={LoadingComponent}
+        ErrorComponent={ErrorComponent}
       >
         {children}
       </ProviderChild>
