@@ -5,30 +5,56 @@ var Context = /*#__PURE__*/React.createContext({
   persistor: null
 });
 
+const ProviderChild = ({
+  loading,
+  error,
+  LoadingComponent,
+  children
+}) => {
+  if (error) {
+    return null;
+  }
+  if (loading) {
+    return LoadingComponent;
+  }
+  return children;
+};
 var Provider = (({
   store,
   persistor = null,
   LoadingComponent = null,
   children
 }) => {
-  // persistor is null = loaded
+  // has persistor = loading
 
-  const [loaded, setLoaded] = React.useState(persistor === null);
+  const [loading, setLoading] = React.useState(persistor !== null);
+  const [error, setError] = React.useState(false);
   React.useEffect(() => {
+    if (!loading) {
+      return;
+    }
+
     // init persistor, if any
 
-    if (persistor !== null) {
-      persistor.init().then(() => {
-        setLoaded(true);
+    setTimeout(() => {
+      persistor.init().catch(error => {
+        setError(true);
+        throw error;
+      }).finally(() => {
+        setLoading(false);
       });
-    }
+    }, 5000);
   }, []);
   return /*#__PURE__*/React.createElement(Context.Provider, {
     value: {
       store,
       persistor
     }
-  }, !loaded ? LoadingComponent : children);
+  }, /*#__PURE__*/React.createElement(ProviderChild, {
+    loading: loading,
+    error: error,
+    LoadingComponent: LoadingComponent
+  }, children));
 });
 
 var useStore = (() => {
@@ -45,7 +71,7 @@ var usePersistor = (() => {
   return persistor;
 });
 
-function compareDeep(value, currentValue) {
+function compare(value, currentValue) {
   // for null values, check if currentValue is also null
 
   if (value === null) {
@@ -61,7 +87,7 @@ function compareDeep(value, currentValue) {
     if (value.length !== currentValue.length) {
       return false;
     }
-    return value.every((item, i) => compareDeep(item, currentValue[i]));
+    return value.every((item, i) => compare(item, currentValue[i]));
   }
 
   // for objects, compare properties deeply
@@ -81,34 +107,38 @@ function compareDeep(value, currentValue) {
     if (keys.length !== currentKeys.length) {
       return false;
     }
-    return keys.every(key => key in currentValue && compareDeep(value[key], currentValue[key]));
+    return keys.every(key => key in currentValue && compare(value[key], currentValue[key]));
   }
 
   // for anything else, check equality
 
   return value === currentValue;
 }
+
+function select(closure, state) {
+  return closure(state);
+}
 var useSelector = (closure => {
   const store = useStore();
   const state = store.getState();
-  const result = closure(state); // closure is called here so we can handle props updates and store updates
+  const result = select(closure, state);
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
 
-  const [_, forceUpdate] = React.useReducer(x => x + 1, 0);
+  // trigger effect every time component is rendered
+
   React.useEffect(() => {
     store.on("update", onCompare);
     return () => {
       store.off("update", onCompare);
     };
-  }); // trigger every time this component is rendered
-
+  });
   const onCompare = () => {
-    try {
-      const newResult = closure(state);
-      const updated = !compareDeep(newResult, result);
-      if (updated) {
-        forceUpdate();
-      }
-    } catch (error) {}
+    const tmpResult = select(closure, state);
+    const equal = compare(tmpResult, result);
+    if (equal) {
+      return;
+    }
+    forceUpdate();
   };
   return result;
 });
